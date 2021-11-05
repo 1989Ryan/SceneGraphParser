@@ -120,7 +120,24 @@ class SpacyParser(ParserBackend):
             elif token.dep_ == 'pobj' and token.head.dep_ == 'agent' and token.head.head.pos_ == 'VERB':
                 relation_subj[token.head.head.i] = token.i
 
+            # Step 2b: determine the subject of the verb
+            # E.g., Place the [apple] to the top of the plate.
+            
+            elif token.dep_ == 'dobj' and token.head.pos_ == 'VERB':
+                flag = 0
+                for child in token.head.children:
+                    if child.dep_ == 'nsubj':
+                        flag = 1
+                        break
+                if flag == 0:
+                    relation_subj[token.head.i] = token.i
+
+
         # Step 3: determine the relations.
+        # TODO: orientation specification
+        # TODO: consider the conj (and)
+        # TODO: The robot place the [apple] to the [left] of the plate. This sentence
+        # is not recognized well. 
         relations = list()
         fake_noun_marks = set()
         for entity in doc.noun_chunks:
@@ -200,8 +217,9 @@ class SpacyParser(ParserBackend):
                         'relation': entity.root.head.head.text + ' ' + entity.root.head.text,
                         'lemma_relation': entity.root.head.head.lemma_ + ' ' + entity.root.head.lemma_
                     }
-                # E.g., A [woman] is playing the [piano] in the room
+                # E.g., A [woman] is playing the piano in the [room]
                 elif entity.root.head.head.dep_== 'VERB' and entity.root.head.head.i in relation_subj:
+                    
                     relation = {
                         'subject': relation_subj[entity.root.head.head.i],
                         'object': entity.root.i,
